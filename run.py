@@ -9,7 +9,8 @@ def clamp01(value):
 def valid(dim, corner):
     return corner[0] >= 0 and corner[0] < dim and corner[1] >= 0 and corner[1] < dim
 
-def diamondsquare(data, dim):
+def diamondsquare(data, dim, roughness):
+    roughness = clamp01(roughness)
     data[0][0] = random.uniform(-1, 1)
     data[dim - 1][0] = random.uniform(-1, 1)
     data[0][dim - 1] = random.uniform(-1, 1)
@@ -17,8 +18,9 @@ def diamondsquare(data, dim):
 
     level = 0
     step = dim - 1
+    strength = 1
     while step > 1:
-        strength = 1 / (1 << level)
+        strength *= pow(2, -roughness)
         halfstep = step >> 1
         for i in range(1 << level):
             for j in range(1 << level):
@@ -42,10 +44,10 @@ def diamondsquare(data, dim):
         step = step >> 1
         level += 1
 
-def generate(power):
+def generate(power, roughness):
     dim = (1 << power) + 1
     heightmap = np.zeros((dim, dim), dtype=np.float32)
-    diamondsquare(heightmap, dim)
+    diamondsquare(heightmap, dim, roughness)
     return heightmap
 
 def to_png(filename, heightmap):
@@ -64,9 +66,10 @@ def to_png(filename, heightmap):
 
 parser = argparse.ArgumentParser(prog='py run.py', description='Generate heightmap', usage='%(prog)s [options]')
 parser.add_argument('power', type=int, help='the power used to calculate image size as 2^power + 1')
+parser.add_argument('roughness', type=float, help='roughness value clamped in range [0,1] (lower means rougher)')
 
 try:
     args = parser.parse_args()
-    to_png("image.png", generate(args.power))
+    to_png("image.png", generate(args.power, args.roughness))
 except argparse.ArgumentError:
     parser.print_help()
